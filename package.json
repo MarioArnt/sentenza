@@ -1,0 +1,17 @@
+{
+  "name": "sentenza",
+  "version": "0.0.0",
+  "description": "Sentenza helps you trigger CI builds",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "keywords": [
+    "trigger"
+  ],
+  "author": "Mario Arnautou",
+  "license": "ISC",
+  "dependencies": {
+    "got": "^11.8.0"
+  }
+}
