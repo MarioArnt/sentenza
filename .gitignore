@@ -1,1 +1,5 @@
 node_modules
+lib
+providers/*/lib
+providers/*/node_modules
+.idea

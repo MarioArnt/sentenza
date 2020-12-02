@@ -1,0 +1,29 @@
+{
+  "name": "sentenza-bitbucket",
+  "version": "0.0.0",
+  "description": "Bitbucket provider for sentenza CI triggers",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "npx tsc",
+    "watch": "npx tsc --watch"
+  },
+  "bin": {
+    "sentenza-bitbucket": "lib/cli/index.js"
+  },
+  "dependencies": {
+    "chalk": "^4.1.0",
+    "got": "^11.8.0",
+    "ora": "^5.1.0"
+  },
+  "peerDependencies": {
+    "sentenza": "^0.0.0"
+  },
+  "devDependencies": {
+    "sentenza": "file:../../",
+    "typescript": "^4.1.2"
+  },
+  "author": "",
+  "license": "ISC"
+}
