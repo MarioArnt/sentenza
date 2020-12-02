@@ -1,6 +1,14 @@
 #!/usr/bin/env node
 /* eslint-disable no-console */
 import { spawnSync } from 'child_process';
+import { printVersion } from './utils';
+
+const args = process.argv.slice(2);
+
+if (args.length === 1 && (args[0] === '-V' || args[0] === '--version')) {
+  console.log(printVersion());
+  process.exit(0);
+}
 
 const hasFlagP = process.argv.includes('-p');
 const hasFlagProvider = process.argv.includes('--provider');

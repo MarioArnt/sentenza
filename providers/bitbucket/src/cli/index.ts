@@ -2,28 +2,17 @@
 
 /* eslint-disable no-console */
 import { Command } from 'commander';
-import { Sentenza } from 'sentenza';
+import { Sentenza, printVersion } from 'sentenza';
 import { SentenzaBitbucket, SentenzaBitbucketPipeline } from '..';
 import ora from 'ora';
+import chalk from 'chalk';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 
-const VERSION = '1.0.0-beta1';
+const version = () => JSON.parse(readFileSync(join(__dirname, '..', '..', 'package.json')).toString()).version;
 
 const program = new Command();
-program.version(`
-            (_/-------------_____________________________________________)
-          \\\`|  /~~~~~~~~~~\\                                              |       Sentenza ${VERSION}
-           ;  |--------(-||______________________________________________|
-           ;  |--------(-| ____________|
-           ;  \\__________/'
-         _/__         ___;
-      ,~~    |  __----~~
-     '        ~~|    (  |
-    '      '~~  \\\`____'
-   '      '
-  '      \\\`
- '       \\\`
-'--------\\\`
-  `);
+program.version(printVersion({ name: 'Bitbucket provider', version: version() }));
 
 const conflictingOptions = (cmd: { [key: string]: string }, options: string[]) => {
   let defined = 0;
@@ -71,7 +60,13 @@ const triggerPipeline = (
   if (trigger.startsWith('branch:')) {
     pipeline = sentenza.trigger(trigger.substr(7));
   } else if (trigger.startsWith('custom:')) {
-    pipeline = sentenza.trigger({ custom: trigger.substr(7) });
+    const variables: { [key: string]: string } = {};
+    Object.keys(process.env)
+      .filter((key) => key.startsWith('SENTENZA_'))
+      .forEach((key) => {
+        variables[key] = process.env[key];
+      });
+    pipeline = sentenza.trigger({ custom: trigger.substr(7), variables });
   } else {
     console.error(
       'Invalid pipeline name. Use the following syntax: branch:<your-branch> or custom:<your-custom-pipeline>',
@@ -92,12 +87,82 @@ program
     const { sentenza, pipeline } = triggerPipeline(trigger, cmd);
     const spinner = ora(`Trigger pipeline ${trigger} on ${JSON.stringify(sentenza.target)}`).start();
     try {
-      await pipeline;
+      const result = await pipeline;
       spinner.succeed(`Pipeline ${trigger} triggered on ${JSON.stringify(sentenza.target)}`);
+      console.info('See pipeline execution @ ' + result.details.links.steps.href);
       process.exit(0);
     } catch (e) {
       spinner.fail();
-      console.error(e);
+      console.error(chalk.red(e));
+      process.exit(1);
+    }
+  });
+
+const triggerAndReturnWatcher = async (
+  trigger: string,
+  cmd: { [key: string]: string },
+): Promise<SentenzaBitbucketPipeline> => {
+  const { sentenza, pipeline } = triggerPipeline(trigger, cmd);
+  const spinner = ora(`Trigger pipeline ${trigger} on ${JSON.stringify(sentenza.target)}`).start();
+  let runner: SentenzaBitbucketPipeline;
+  try {
+    runner = await pipeline;
+    spinner.succeed(`Pipeline ${trigger} triggered on ${JSON.stringify(sentenza.target)}`);
+  } catch (e) {
+    spinner.fail();
+    console.error(e);
+    process.exit(1);
+  }
+  console.info('See pipeline execution @ ' + runner.details.links.self.href);
+  return runner;
+};
+
+program
+  .command('watch <custom:pipeline|branch:pipeline>')
+  .requiredOption('-r --repository <repository>', 'Target repository')
+  .option('-a, --auth <user>:<app_password>', 'Username')
+  .option('-c, --commit <hash>', 'CI provider')
+  .option('-b, --branch <name>', 'CI provider')
+  .option('-t, --tag <name>', 'CI provider')
+  .option('--polling-rate <seconds>', 'CI provider')
+  .action(async (trigger, cmd) => {
+    try {
+      const runner = await triggerAndReturnWatcher(trigger, cmd);
+      const spinner = ora('Pipeline is running').start();
+      const result = await runner.finished(cmd.pollingRate);
+      spinner.text = 'Pipeline has finished with status ' + result.state.name.toLowerCase();
+      spinner.stop();
+      process.exit(0);
+    } catch (e) {
+      console.error(chalk.red(e));
+      process.exit(1);
+    }
+  });
+
+program
+  .command('expect-success <custom:pipeline|branch:pipeline>')
+  .requiredOption('-r --repository <repository>', 'Target repository')
+  .option('-a, --auth <user>:<app_password>', 'Username')
+  .option('-c, --commit <hash>', 'CI provider')
+  .option('-b, --branch <name>', 'CI provider')
+  .option('-t, --tag <name>', 'CI provider')
+  .option('--polling-rate <seconds>', 'CI provider')
+  .action(async (trigger, cmd) => {
+    let runner: SentenzaBitbucketPipeline;
+    try {
+      runner = await triggerAndReturnWatcher(trigger, cmd);
+    } catch (e) {
+      console.error(chalk.red(e));
+      process.exit(1);
+    }
+    const spinner = ora('Pipeline is running').start();
+    try {
+      await runner.finished(cmd.pollingRate);
+      spinner.succeed('Pipeline has succeeded 🎉');
+      process.exit(0);
+    } catch (e) {
+      spinner.succeed('Pipeline has not succeeded 😞');
+      console.error(chalk.red(e));
       process.exit(1);
     }
   });
