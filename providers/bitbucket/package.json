@@ -1,6 +1,6 @@
 {
   "name": "sentenza-bitbucket",
-  "version": "0.0.1",
+  "version": "0.0.5",
   "description": "Bitbucket provider for sentenza CI triggers",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -18,7 +18,7 @@
     "ora": "^5.1.0"
   },
   "peerDependencies": {
-    "sentenza": "^0.0.0"
+    "sentenza": "^0.0.5"
   },
   "devDependencies": {
     "sentenza": "file:../../",

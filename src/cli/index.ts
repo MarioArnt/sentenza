@@ -24,11 +24,12 @@ const runForProvider = (flag: string) => {
   if (provider.startsWith('-')) {
     missingProvider();
   }
-  spawnSync(
+  const { status } = spawnSync(
     'npx',
     [`sentenza-${provider}`, ...process.argv.slice(2).filter((arg) => arg !== flag && arg !== provider)],
     { stdio: 'inherit' },
   );
+  process.exit(status);
 };
 
 if (hasFlagP && hasFlagProvider) {

@@ -8,6 +8,7 @@ import ora from 'ora';
 import chalk from 'chalk';
 import { readFileSync } from 'fs';
 import { join } from 'path';
+import { HTTPError } from 'got';
 
 const version = () => JSON.parse(readFileSync(join(__dirname, '..', '..', 'package.json')).toString()).version;
 
@@ -27,6 +28,13 @@ const conflictingOptions = (cmd: { [key: string]: string }, options: string[]) =
         options.map((option) => '--' + option).join(', '),
     );
     process.exit(1);
+  }
+};
+
+const printError = (e: Error) => {
+  console.error(chalk.red(e));
+  if (e instanceof HTTPError) {
+    console.error(chalk.red(e.response.body));
   }
 };
 
@@ -93,7 +101,7 @@ program
       process.exit(0);
     } catch (e) {
       spinner.fail();
-      console.error(chalk.red(e));
+      printError(e);
       process.exit(1);
     }
   });
@@ -110,7 +118,7 @@ const triggerAndReturnWatcher = async (
     spinner.succeed(`Pipeline ${trigger} triggered on ${JSON.stringify(sentenza.target)}`);
   } catch (e) {
     spinner.fail();
-    console.error(e);
+    printError(e);
     process.exit(1);
   }
   console.info('See pipeline execution @ ' + runner.details.links.self.href);
@@ -134,7 +142,7 @@ program
       spinner.stop();
       process.exit(0);
     } catch (e) {
-      console.error(chalk.red(e));
+      printError(e);
       process.exit(1);
     }
   });
@@ -152,7 +160,7 @@ program
     try {
       runner = await triggerAndReturnWatcher(trigger, cmd);
     } catch (e) {
-      console.error(chalk.red(e));
+      printError(e);
       process.exit(1);
     }
     const spinner = ora('Pipeline is running').start();
@@ -162,7 +170,7 @@ program
       process.exit(0);
     } catch (e) {
       spinner.succeed('Pipeline has not succeeded 😞');
-      console.error(chalk.red(e));
+      printError(e);
       process.exit(1);
     }
   });
