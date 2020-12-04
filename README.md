@@ -1,77 +1,64 @@
 # Sentenza
 
-Trigger build from a pipeline to another
+<p align="center">
+  <img src="https://github.com/MarioArnt/sentenza/blob/master/sentenza.jpg?raw=true" alt="The Bad"/>
+</p>
 
-Offers a extensible API to allow community to write/maintain adaptors for CI providers
+Sentenza helps you to trigger builds from a pipeline.
 
-* travis adaptor
-* bitbucket adaptor
-* gitlab adaptor
-* circle CI adaptor
+From a script, another pipeline, your laptop... no matter.
 
-Will develop a bitbucket adaptor first
+Sentenza always follow his job through. You know that.
 
-MVP Features:
+Sentenza offers a command line interface (CLI) and a Javascript/Typescript API.
 
+## Official providers
 
-CLI:
+Sentenza offers an extensible API that allow community to write and maintain adaptors for the different CI providers.
 
-do not forget provider@version
-verbose
- 
+An official provider is part of this monorepo, so it has been written or reviewed by sentenza maintainers.
 
+Here are the currently supported providers:
 
-Trigger a build
-Triger a build and wait that build succeed/fail  (using web hoks preferably, long polling if not available)
+* [Bitbucket Pipelines](https://github.com/MarioArnt/sentenza/blob/master/providers/bitbucket/README.md)
 
-Usage:
+## Community providers
 
-````typescript
-const sentenza = new Sentenza({
-  provider: 'bitbucket',
-  auth: {
-    username: process.env.BITBUCKET_USERNAME,
-    app_password: process.env.BITBUCKET_APP_PASSWORD,
-  },
-});
+There are no providers yet for others continuous integration tools.
 
+If you want to write your own provider, get started by reading [this guide](https://github.com/MarioArnt/sentenza/blob/master/providers/GUIDE.md).
 
-// trigger pipeline dev at the end of dev
-sentenza.trigger('dev');
+We are looking for volunteers to develop adaptors for:
 
-// trigger custom pipeline at the end of specific branch
-sentenza.on('staging').trigger({ custom: 'foo' })
+* Travis
+* Gitlab CI
+* Circle CI
 
+You can either submit a PR on this repository with your provider in `providers/{your-provider}`.
+We will review and merge your code, and your provider added to the list of official providers.
 
-// trigger custom pipeline on specific commit
-sentenza.on({ commit: 'ce5b743' }).trigger({
-  custom: 'foo',
-  variables: {
-    bar: 'baz',
-  }
-})
+If you prefer to store the code in your own repository and have control on NPM publish process, yo can do it.
 
-// trigger branch pipeline on specific commit
-sentenza.on({ commit: 'ce5b743' }).trigger({ branch: 'dev' })
+In this case, please submit a PR modifying the README.md and adding your provider in "community providers" if you want it to appear here.
 
+## Usage
 
-// pull request (todo)
+Sentenza cannot do much without his fellow providers...
 
-// wait for pipeline to finish
-const pipeline = await sentenza.trigger('dev');
+Check the documentation of the target provider for detailed guidance.
 
-const result = await pipeline.finished();
-console.info(result);
-// {status: 'failed', url: '', duration: 134 }
+### CLI
 
-// wait for pipeline to suceed, throw otherwise
-try {
-  await pipeline.succeed();
-  console.info('Pipeline suceed \\o/');
-  process.exit(0);
-} catch (e) {
-  console.error('Pipeline failed :S');
-  console.error(e);
-  process.exit(1);
-}
-````
+Install `sentenza` in your project using `npm i -D sentenza`
+
+Now you can run `npx sentenza --version` to see currently installed version
+
+#### Using specific version for providers
+
+Sentenza CLI uses ``npx`` under the hood to call provider's CLI. So you can use any version of the provider this way:
+
+``npx sentenza -p bitbucket@0.0.6 --help``
+
+### Debugging
+
+Sentenza use [debug](https://github.com/visionmedia/debug) package to manage debug logs. Activate them by setting ``DEBUG=sentenza`` in your environment.

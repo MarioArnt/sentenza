@@ -86,12 +86,24 @@ const triggerPipeline = (
 };
 
 program
-  .command('trigger <custom:pipeline|branch:pipeline>')
-  .requiredOption('-r --repository <repository>', 'Target repository')
-  .option('-a, --auth <user>:<app_password>', 'Username')
-  .option('-c, --commit <hash>', 'CI provider')
-  .option('-b, --branch <name>', 'CI provider')
-  .option('-t, --tag <name>', 'CI provider')
+  .command(
+    'trigger <custom:pipeline|branch:pipeline>',
+    'Trigger a pipeline without waiting for the pipeline to finish. Expected argument is the name of the pipeline to run, prefixed by custom: (for custom pipelines) or branch: (for branch pipelines). For custom pipeline you can set variables by setting them with SENTENZA_ prefix (e.g. SENTENZA_FOO=bar will set FOO=bar in custom pipeline)',
+  )
+  .requiredOption(
+    '-r --repository <repository>',
+    'Specify target repository full name (i.e. username and repository name separated by a slash, like ClintEastwood/WesternProjectRepository)',
+  )
+  .option(
+    '-a, --auth <user>:<app_password>',
+    'Authentication details, username and password separated by ":" (e.g. SergioLeone:$MY_SECRET_PASS_FROM_ENV). Note: You cannot have ":" in your app password. If it is the case, please re-generate it. ',
+  )
+  .option(
+    '-c, --commit <hash>',
+    'The full hash (short form not supported) of the target commit. This option cannot be used with -b nor -t.',
+  )
+  .option('-b, --branch <name>', 'The name of the target branch. This option cannot be used with -b nor -t.')
+  .option('-t, --tag <name>', 'The name of the target tag. This option cannot be used with -b nor -t.')
   .action(async (trigger, cmd) => {
     const { sentenza, pipeline } = triggerPipeline(trigger, cmd);
     const spinner = ora(`Trigger pipeline ${trigger} on ${JSON.stringify(sentenza.target)}`).start();
@@ -131,13 +143,25 @@ const triggerAndReturnWatcher = async (
 };
 
 program
-  .command('watch <custom:pipeline|branch:pipeline>')
-  .requiredOption('-r --repository <repository>', 'Target repository')
-  .option('-a, --auth <user>:<app_password>', 'Username')
-  .option('-c, --commit <hash>', 'CI provider')
-  .option('-b, --branch <name>', 'CI provider')
-  .option('-t, --tag <name>', 'CI provider')
-  .option('--polling-rate <seconds>', 'CI provider')
+  .command(
+    'watch <custom:pipeline|branch:pipeline>',
+    'Trigger a pipeline and wait for the pipeline to finish. Exit 0 whatever the pipeline status. Expected argument is the name of the pipeline to run, prefixed by custom: (for custom pipelines) or branch: (for branch pipelines). For custom pipeline you can set variables by setting them with SENTENZA_ prefix (e.g. SENTENZA_FOO=bar will set FOO=bar in custom pipeline)',
+  )
+  .requiredOption(
+    '-r --repository <repository>',
+    'Specify target repository full name (i.e. username and repository name separated by a slash, like ClintEastwood/WesternProjectRepository)',
+  )
+  .option(
+    '-a, --auth <user>:<app_password>',
+    'Authentication details, username and password separated by ":" (e.g. SergioLeone:$MY_SECRET_PASS_FROM_ENV). Note: You cannot have ":" in your app password. If it is the case, please re-generate it. ',
+  )
+  .option(
+    '-c, --commit <hash>',
+    'The full hash (short form not supported) of the target commit. This option cannot be used with -b nor -t.',
+  )
+  .option('-b, --branch <name>', 'The name of the target branch. This option cannot be used with -b nor -t.')
+  .option('-t, --tag <name>', 'The name of the target tag. This option cannot be used with -b nor -t.')
+  .option('--polling-rate <seconds>', 'Polling rate (in seconds) to watch result. Default to ten seconds.')
   .action(async (trigger, cmd) => {
     try {
       const runner = await triggerAndReturnWatcher(trigger, cmd);
@@ -153,13 +177,25 @@ program
   });
 
 program
-  .command('expect-success <custom:pipeline|branch:pipeline>')
-  .requiredOption('-r --repository <repository>', 'Target repository')
-  .option('-a, --auth <user>:<app_password>', 'Username')
-  .option('-c, --commit <hash>', 'CI provider')
-  .option('-b, --branch <name>', 'CI provider')
-  .option('-t, --tag <name>', 'CI provider')
-  .option('--polling-rate <seconds>', 'CI provider')
+  .command(
+    'expect-success <custom:pipeline|branch:pipeline>',
+    'Trigger a pipeline and wait for the pipeline to finish. Exit 0 if pipeline succeed, 1 otherwise. Expected argument is the name of the pipeline to run, prefixed by custom: (for custom pipelines) or branch: (for branch pipelines). For custom pipeline you can set variables by setting them with SENTENZA_ prefix (e.g. SENTENZA_FOO=bar will set FOO=bar in custom pipeline)',
+  )
+  .requiredOption(
+    '-r --repository <repository>',
+    'Specify target repository full name (i.e. username and repository name separated by a slash, like ClintEastwood/WesternProjectRepository)',
+  )
+  .option(
+    '-a, --auth <user>:<app_password>',
+    'Authentication details, username and password separated by ":" (e.g. SergioLeone:$MY_SECRET_PASS_FROM_ENV). Note: You cannot have ":" in your app password. If it is the case, please re-generate it. ',
+  )
+  .option(
+    '-c, --commit <hash>',
+    'The full hash (short form not supported) of the target commit. This option cannot be used with -b nor -t.',
+  )
+  .option('-b, --branch <name>', 'The name of the target branch. This option cannot be used with -b nor -t.')
+  .option('-t, --tag <name>', 'The name of the target tag. This option cannot be used with -b nor -t.')
+  .option('--polling-rate <seconds>', 'Polling rate (in seconds) to watch result. Default to ten seconds.')
   .action(async (trigger, cmd) => {
     let runner: SentenzaBitbucketPipeline;
     try {
