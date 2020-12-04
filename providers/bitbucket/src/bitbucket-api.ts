@@ -9,6 +9,7 @@ import {
   TriggerOptions,
   EnvVars,
 } from 'sentenza';
+import { logger } from './logger';
 
 interface IPipelineOptions {
   target: TargetOptions;
@@ -47,11 +48,14 @@ export interface IPipelineDetails {
     uuid: string;
   };
   state: {
-    name: string;
+    name: 'IN_PROGRESS' | 'PENDING' | 'COMPLETED';
     type: string;
     stage: {
       name: string;
       type: string;
+    };
+    result: {
+      name: 'STOPPED' | 'SUCCESSFUL' | 'FAILED';
     };
   };
   build_number: number;
@@ -120,20 +124,47 @@ export class BitbucketAPI {
   }
 
   async getTagDetails(repository: string, tag: string): Promise<ITagDetails> {
-    return this._client.get(`repositories/${repository}/refs/tags/${tag}`).json<ITagDetails>();
+    const url = `repositories/${repository}/refs/tags/${tag}`
+    logger('GET', url);
+    try {
+      const response = await this._client.get(url).json<ITagDetails>();
+      logger('GET', url, response);
+      return response;
+    } catch (e) {
+      logger(e);
+      throw e;
+    }
   }
 
   async triggerPipeline(repository: string, options: IPipelineOptions): Promise<IPipelineDetails> {
     const payload = await this._payload(options, repository);
-    return this._client
-      .post(`repositories/${repository}/pipelines/`, {
-        json: payload,
-      })
-      .json<IPipelineDetails>();
+    const url = `repositories/${repository}/pipelines/`;
+    logger('POST', url, payload);
+    try {
+      const response = await this._client
+        .post(url, {
+          json: payload,
+        })
+        .json<IPipelineDetails>();
+      logger('POST', url, response);
+      return response;
+    } catch (e) {
+      logger(e);
+      throw e;
+    }
   }
 
   async getPipelineStatus(repository: string, uuid: string): Promise<IPipelineDetails> {
-    return this._client.get(`repositories/${repository}/pipelines/${uuid}`).json<IPipelineDetails>();
+    const url = `repositories/${repository}/pipelines/${uuid}`;
+    logger('GET', url);
+    try {
+      const status = await this._client.get(url).json<IPipelineDetails>();
+      logger('GET', url, status);
+      return status;
+    } catch (e) {
+      logger(e);
+      throw e;
+    }
   }
 
   private async _payload(options: IPipelineOptions, repository: string): Promise<IBitbucketPayload> {

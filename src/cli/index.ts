@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 /* eslint-disable no-console */
+import chalk from 'chalk';
 import { spawnSync } from 'child_process';
 import { printVersion } from './utils';
 
@@ -14,7 +15,7 @@ const hasFlagP = process.argv.includes('-p');
 const hasFlagProvider = process.argv.includes('--provider');
 
 const missingProvider = () => {
-  console.error('Missing argument: Please specify a provider with -p or --provider option');
+  console.error(chalk.red('Missing argument: Please specify a provider with -p or --provider option'));
   process.exit(1);
 };
 
@@ -33,7 +34,7 @@ const runForProvider = (flag: string) => {
 };
 
 if (hasFlagP && hasFlagProvider) {
-  console.error('Conflicting options: do not give both -p and --provider options');
+  console.error(chalk.red('Conflicting options: do not give both -p and --provider options'));
   process.exit(1);
 } else if (hasFlagP) {
   runForProvider('-p');

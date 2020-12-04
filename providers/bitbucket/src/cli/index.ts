@@ -9,6 +9,7 @@ import chalk from 'chalk';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { HTTPError } from 'got';
+import { IPipelineDetails } from '../bitbucket-api';
 
 const version = () => JSON.parse(readFileSync(join(__dirname, '..', '..', 'package.json')).toString()).version;
 
@@ -97,7 +98,9 @@ program
     try {
       const result = await pipeline;
       spinner.succeed(`Pipeline ${trigger} triggered on ${JSON.stringify(sentenza.target)}`);
-      console.info('See pipeline execution @ ' + result.details.links.steps.href);
+      console.info(
+        `See pipeline execution @  https://bitbucket.org/${result.details.repository.full_name}/addon/pipelines/home#!/results/${result.details.uuid}`,
+      );
       process.exit(0);
     } catch (e) {
       spinner.fail();
@@ -121,7 +124,9 @@ const triggerAndReturnWatcher = async (
     printError(e);
     process.exit(1);
   }
-  console.info('See pipeline execution @ ' + runner.details.links.self.href);
+  console.info(
+    `See pipeline execution @  https://bitbucket.org/${runner.details.repository.full_name}/addon/pipelines/home#!/results/${runner.details.uuid}`,
+  );
   return runner;
 };
 
@@ -165,12 +170,28 @@ program
     }
     const spinner = ora('Pipeline is running').start();
     try {
-      await runner.finished(cmd.pollingRate);
+      await runner.succeeded(cmd.pollingRate);
       spinner.succeed('Pipeline has succeeded 🎉');
       process.exit(0);
-    } catch (e) {
-      spinner.succeed('Pipeline has not succeeded 😞');
-      printError(e);
+    } catch (e: unknown) {
+      const isPipelineCompleted = (e: unknown): e is IPipelineDetails => {
+        return (e as IPipelineDetails).state !== undefined;
+      };
+      if (isPipelineCompleted(e)) {
+        switch (e.state?.result?.name) {
+          case 'FAILED':
+            spinner.fail(chalk.red('Pipeline has failed 💥'));
+            break;
+          case 'STOPPED':
+            spinner.fail(chalk.yellow('Pipeline has been stopped 🚦'));
+            break;
+          default:
+            spinner.fail(chalk.red('Pipeline has not succeeded 😞'));
+            break;
+        }
+      } else {
+        printError(e as Error);
+      }
       process.exit(1);
     }
   });

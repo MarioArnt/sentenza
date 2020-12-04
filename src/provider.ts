@@ -1,4 +1,5 @@
 import { SentenzaPipeline } from './pipeline';
+import { logger } from './logger';
 
 export type EnvVars = { [key: string]: string | number | boolean };
 export type SecuredEnvVars = Array<{ key: string; value: string | number | boolean; secured?: boolean }>;
@@ -39,8 +40,10 @@ export abstract class SentenzaProvider {
 
   on(target: string | TargetOptions): SentenzaProvider {
     if (typeof target === 'string') {
+      logger('target', 'received string', target);
       this._target = { branch: target };
     } else {
+      logger('target', 'received target', target);
       this._target = target;
     }
     return this;
@@ -48,20 +51,29 @@ export abstract class SentenzaProvider {
 
   async trigger(pipeline: string | TriggerOptions): Promise<SentenzaPipeline> {
     if (typeof pipeline === 'string') {
+      logger('trigger', 'received string', pipeline);
       this._trigger = { branch: pipeline };
     } else {
+      logger('trigger', 'received pipeline', pipeline);
       this._trigger = pipeline;
     }
     const isBranchPipeline = Object.prototype.hasOwnProperty.call(this._trigger, 'branch');
+    logger('trigger', { isBranchPipeline });
 
     if (!this._target && isBranchPipeline) {
+      logger('trigger', 'trigger("branch") called without target specified, running on same branch');
       this._target = this._trigger as { branch: string };
     }
 
     if (!this._target) {
+      logger('trigger', 'no target specified');
       throw new Error('No target defined to run pipeline. Please specify a target branch, commit hash or target tag.');
     }
 
+    logger(
+      'trigger',
+      'common processing done, provider must now call API to trigger pipeline and return a SentenzaPipeline subclass',
+    );
     return null;
   }
 }

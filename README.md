@@ -13,6 +13,14 @@ Will develop a bitbucket adaptor first
 
 MVP Features:
 
+
+CLI:
+
+do not forget provider@version
+verbose
+ 
+
+
 Trigger a build
 Triger a build and wait that build succeed/fail  (using web hoks preferably, long polling if not available)
 
