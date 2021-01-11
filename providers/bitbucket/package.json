@@ -1,31 +1,27 @@
 {
   "name": "sentenza-bitbucket",
-  "version": "1.0.0-rc2",
+  "version": "1.0.0-rc4",
   "description": "Bitbucket provider for sentenza CI triggers",
+  "author": "Mario Arnautou",
+  "license": "ISC",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "npx tsc",
-    "watch": "npx tsc --watch"
+    "build:tsc": "yarn tsc",
+    "watch": "yarn tsc --watch"
   },
-  "bin": {
-    "sentenza-bitbucket": "lib/cli/index.js"
-  },
+  "bin": "lib/cli/index.js",
   "dependencies": {
+    "@caporal/core": "^2.0.2",
     "chalk": "^4.1.0",
     "debug": "^4.3.1",
     "got": "^11.8.0",
-    "ora": "^5.1.0"
-  },
-  "peerDependencies": {
-    "sentenza": "^1.0.0-rc1"
+    "ora": "^5.1.0",
+    "sentenza": "workspace:*"
   },
   "devDependencies": {
     "@types/debug": "^4.1.5",
-    "sentenza": "file:../../",
     "typescript": "^4.1.2"
-  },
-  "author": "",
-  "license": "ISC"
+  }
 }

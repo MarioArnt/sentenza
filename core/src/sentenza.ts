@@ -16,6 +16,7 @@ export class Sentenza {
       );
     }
     logger('provider found', module);
+    console.log(module);
     if (!module.default) {
       throw new Error(`Package sentenza-${provider} has no default export`);
     }

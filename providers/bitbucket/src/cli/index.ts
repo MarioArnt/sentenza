@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 /* eslint-disable no-console */
-import { Command } from 'commander';
-import { Sentenza, printVersion } from 'sentenza';
+import { program, ParsedOptions, CaporalValidator } from '@caporal/core';
+import { printVersion, Sentenza } from 'sentenza';
 import { SentenzaBitbucket, SentenzaBitbucketPipeline } from '..';
 import ora from 'ora';
 import chalk from 'chalk';
@@ -13,10 +13,9 @@ import { IPipelineDetails } from '../bitbucket-api';
 
 const version = () => JSON.parse(readFileSync(join(__dirname, '..', '..', 'package.json')).toString()).version;
 
-const program = new Command();
 program.version(printVersion({ name: 'Bitbucket provider', version: version() }));
 
-const conflictingOptions = (cmd: { [key: string]: string }, options: string[]) => {
+const conflictingOptions = (cmd: ParsedOptions, options: string[]) => {
   let defined = 0;
   options.forEach((option) => {
     if (cmd[option]) {
@@ -41,28 +40,28 @@ const printError = (e: Error) => {
 
 const triggerPipeline = (
   trigger: string,
-  cmd: { [key: string]: string },
+  cmd: ParsedOptions,
 ): { pipeline: Promise<SentenzaBitbucketPipeline>; sentenza: SentenzaBitbucket } => {
   let sentenza = Sentenza.provider<SentenzaBitbucket>('bitbucket');
   if (cmd.auth) {
-    const credentials = cmd.auth.split(':');
+    const credentials = cmd.auth.toString().split(':');
     sentenza = sentenza.auth({
       username: credentials[0],
       app_password: credentials[1],
     });
   }
-  sentenza = sentenza.repository(cmd.repository);
+  sentenza = sentenza.repository(cmd.repository.toString());
 
   conflictingOptions(cmd, ['commit', 'branch', 'tag']);
 
   if (cmd.commit) {
-    sentenza = sentenza.on({ commit: cmd.commit });
+    sentenza = sentenza.on({ commit: cmd.commit.toString() });
   }
   if (cmd.branch) {
-    sentenza = sentenza.on({ branch: cmd.branch });
+    sentenza = sentenza.on({ branch: cmd.branch.toString() });
   }
   if (cmd.tag) {
-    sentenza = sentenza.on({ tag: cmd.tag });
+    sentenza = sentenza.on({ tag: cmd.tag.toString() });
   }
 
   let pipeline: Promise<SentenzaBitbucketPipeline>;
@@ -86,13 +85,15 @@ const triggerPipeline = (
 };
 
 program
-  .command(
-    'trigger <custom:pipeline|branch:pipeline>',
-    'Trigger a pipeline without waiting for the pipeline to finish. Expected argument is the name of the pipeline to run, prefixed by custom: (for custom pipelines) or branch: (for branch pipelines). For custom pipeline you can set variables by setting them with SENTENZA_ prefix (e.g. SENTENZA_FOO=bar will set FOO=bar in custom pipeline)',
+  .command('trigger', 'Trigger a pipeline without waiting for the pipeline to finish.')
+  .argument(
+    '<pipeline>',
+    'Expected argument is the name of the pipeline to run, prefixed by custom: (for custom pipelines) or branch: (for branch pipelines). For custom pipeline you can set variables by setting them with SENTENZA_ prefix (e.g. SENTENZA_FOO=bar will set FOO=bar in custom pipeline)',
   )
-  .requiredOption(
+  .option(
     '-r --repository <repository>',
     'Specify target repository full name (i.e. username and repository name separated by a slash, like ClintEastwood/WesternProjectRepository)',
+    { required: true },
   )
   .option(
     '-a, --auth <user>:<app_password>',
@@ -104,8 +105,9 @@ program
   )
   .option('-b, --branch <name>', 'The name of the target branch. This option cannot be used with -b nor -t.')
   .option('-t, --tag <name>', 'The name of the target tag. This option cannot be used with -b nor -t.')
-  .action(async (trigger, cmd) => {
-    const { sentenza, pipeline } = triggerPipeline(trigger, cmd);
+  .action(async ({ args, options }) => {
+    const trigger = args.pipeline.toString();
+    const { sentenza, pipeline } = triggerPipeline(trigger, options);
     const spinner = ora(`Trigger pipeline ${trigger} on ${JSON.stringify(sentenza.target)}`).start();
     try {
       const result = await pipeline;
@@ -121,10 +123,7 @@ program
     }
   });
 
-const triggerAndReturnWatcher = async (
-  trigger: string,
-  cmd: { [key: string]: string },
-): Promise<SentenzaBitbucketPipeline> => {
+const triggerAndReturnWatcher = async (trigger: string, cmd: ParsedOptions): Promise<SentenzaBitbucketPipeline> => {
   const { sentenza, pipeline } = triggerPipeline(trigger, cmd);
   const spinner = ora(`Trigger pipeline ${trigger} on ${JSON.stringify(sentenza.target)}`).start();
   let runner: SentenzaBitbucketPipeline;
@@ -143,13 +142,15 @@ const triggerAndReturnWatcher = async (
 };
 
 program
-  .command(
-    'watch <custom:pipeline|branch:pipeline>',
-    'Trigger a pipeline and wait for the pipeline to finish. Exit 0 whatever the pipeline status. Expected argument is the name of the pipeline to run, prefixed by custom: (for custom pipelines) or branch: (for branch pipelines). For custom pipeline you can set variables by setting them with SENTENZA_ prefix (e.g. SENTENZA_FOO=bar will set FOO=bar in custom pipeline)',
+  .command('watch', 'Trigger a pipeline and wait for the pipeline to finish. Exit 0 whatever the pipeline status.')
+  .argument(
+    '<pipeline>',
+    'Expected argument is the name of the pipeline to run, prefixed by custom: (for custom pipelines) or branch: (for branch pipelines). For custom pipeline you can set variables by setting them with SENTENZA_ prefix (e.g. SENTENZA_FOO=bar will set FOO=bar in custom pipeline)',
   )
-  .requiredOption(
+  .option(
     '-r --repository <repository>',
     'Specify target repository full name (i.e. username and repository name separated by a slash, like ClintEastwood/WesternProjectRepository)',
+    { required: true, validator: CaporalValidator.STRING },
   )
   .option(
     '-a, --auth <user>:<app_password>',
@@ -161,12 +162,16 @@ program
   )
   .option('-b, --branch <name>', 'The name of the target branch. This option cannot be used with -b nor -t.')
   .option('-t, --tag <name>', 'The name of the target tag. This option cannot be used with -b nor -t.')
-  .option('--polling-rate <seconds>', 'Polling rate (in seconds) to watch result. Default to ten seconds.')
-  .action(async (trigger, cmd) => {
+  .option('--polling-rate <seconds>', 'Polling rate (in seconds) to watch result. Default to ten seconds.', {
+    validator: CaporalValidator.NUMBER,
+  })
+  .action(async ({ args, options }) => {
     try {
-      const runner = await triggerAndReturnWatcher(trigger, cmd);
+      const trigger = args.pipeline.toString();
+      const pollingRate = Number(args.pollingRate);
+      const runner = await triggerAndReturnWatcher(trigger, options);
       const spinner = ora('Pipeline is running').start();
-      const result = await runner.finished(cmd.pollingRate);
+      const result = await runner.finished(pollingRate);
       spinner.text = 'Pipeline has finished with status ' + result.state.name.toLowerCase();
       spinner.stop();
       process.exit(0);
@@ -178,12 +183,17 @@ program
 
 program
   .command(
-    'expect-success <custom:pipeline|branch:pipeline>',
-    'Trigger a pipeline and wait for the pipeline to finish. Exit 0 if pipeline succeed, 1 otherwise. Expected argument is the name of the pipeline to run, prefixed by custom: (for custom pipelines) or branch: (for branch pipelines). For custom pipeline you can set variables by setting them with SENTENZA_ prefix (e.g. SENTENZA_FOO=bar will set FOO=bar in custom pipeline)',
+    'expect-success',
+    'Trigger a pipeline and wait for the pipeline to finish. Exit 0 if pipeline succeed, 1 otherwise',
   )
-  .requiredOption(
+  .argument(
+    '<pipeline>',
+    'Expected argument is the name of the pipeline to run, prefixed by custom: (for custom pipelines) or branch: (for branch pipelines). For custom pipeline you can set variables by setting them with SENTENZA_ prefix (e.g. SENTENZA_FOO=bar will set FOO=bar in custom pipeline)',
+  )
+  .option(
     '-r --repository <repository>',
     'Specify target repository full name (i.e. username and repository name separated by a slash, like ClintEastwood/WesternProjectRepository)',
+    { required: true },
   )
   .option(
     '-a, --auth <user>:<app_password>',
@@ -195,18 +205,22 @@ program
   )
   .option('-b, --branch <name>', 'The name of the target branch. This option cannot be used with -b nor -t.')
   .option('-t, --tag <name>', 'The name of the target tag. This option cannot be used with -b nor -t.')
-  .option('--polling-rate <seconds>', 'Polling rate (in seconds) to watch result. Default to ten seconds.')
-  .action(async (trigger, cmd) => {
+  .option('--polling-rate <seconds>', 'Polling rate (in seconds) to watch result. Default to ten seconds.', {
+    validator: CaporalValidator.NUMBER,
+  })
+  .action(async ({ args, options }) => {
     let runner: SentenzaBitbucketPipeline;
+    const trigger = args.pipeline.toString();
+    const pollingRate = Number(args.pollingRate);
     try {
-      runner = await triggerAndReturnWatcher(trigger, cmd);
+      runner = await triggerAndReturnWatcher(trigger, options);
     } catch (e) {
       printError(e);
       process.exit(1);
     }
     const spinner = ora('Pipeline is running').start();
     try {
-      await runner.succeeded(cmd.pollingRate);
+      await runner.succeeded(pollingRate);
       spinner.succeed('Pipeline has succeeded 🎉');
       process.exit(0);
     } catch (e: unknown) {
@@ -232,4 +246,4 @@ program
     }
   });
 
-(async () => program.parseAsync(process.argv))();
+(async () => await program.run())();

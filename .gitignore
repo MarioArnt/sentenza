@@ -3,3 +3,10 @@ lib
 providers/*/lib
 providers/*/node_modules
 .idea
+coverage/
+**.DS_Store
+.yarn/*
+!.yarn/releases
+!.yarn/plugins
+.pnp.*
+**/node_modules/

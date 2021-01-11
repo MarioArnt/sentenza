@@ -1,0 +1,26 @@
+{
+  "name": "sentenza",
+  "version": "1.0.0-rc2",
+  "description": "Sentenza helps you trigger CI builds",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "bin": "lib/cli/index.js",
+  "scripts": {
+    "build": "yarn workspaces foreach -tv run build:tsc",
+    "build:tsc": "yarn tsc",
+    "build:watch": "yarn tsc --watch",
+    "test": "jest"
+  },
+  "keywords": [
+    "trigger"
+  ],
+  "author": "Mario Arnautou",
+  "license": "ISC",
+  "devDependencies": {
+    "typescript": "^4.1.2"
+  },
+  "dependencies": {
+    "chalk": "^4.1.0",
+    "debug": "^4.3.1"
+  }
+}
