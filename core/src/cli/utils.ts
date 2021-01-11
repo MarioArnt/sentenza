@@ -69,7 +69,7 @@ const quotes = [
 
 const getRandomQuote = () => {
   return quotes[Math.floor(Math.random() * quotes.length)]
-}
+};
 
 export const printVersion = (provider?: { name: string; version: string }): string => {
   const version = JSON.parse(readFileSync(join(__dirname, '..', '..', 'package.json')).toString()).version;

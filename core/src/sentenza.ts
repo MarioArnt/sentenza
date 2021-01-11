@@ -10,13 +10,19 @@ export class Sentenza {
       // eslint-disable-next-line @typescript-eslint/no-var-requires
       module = require(`sentenza-${provider}`);
     } catch (e) {
-      logger('provider not found', `sentenza-${provider}`);
+      if (e.code === 'MODULE_NOT_FOUND') {
+        logger('provider not found', `sentenza-${provider}`);
+        throw new Error(
+          `No provider found for ${provider}. Make sure package sentenza-${provider} is installed on your current NPM project`,
+        );
+      }
+      // eslint-disable-next-line no-console
+      console.error(e);
       throw new Error(
-        `No provider found for ${provider}. Make sure package sentenza-${provider} is installed on your current NPM project`,
+        `Failed to import sentenza-${provider}. Make sure you are using CommonJS syntax and you are exporting a valid provider`,
       );
     }
     logger('provider found', module);
-    console.log(module);
     if (!module.default) {
       throw new Error(`Package sentenza-${provider} has no default export`);
     }

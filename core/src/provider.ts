@@ -27,6 +27,18 @@ export abstract class SentenzaProvider {
   protected _trigger: TriggerOptions;
   protected _repository: string;
 
+  get options(): {
+    trigger: BranchOptions | CustomTriggerOptions;
+    repository: string;
+    target: BranchOptions | CommitOptions | TagOptions;
+  } {
+    return {
+      repository: this._repository,
+      target: this._target,
+      trigger: this._trigger,
+    };
+  }
+
   repository(url: string): SentenzaProvider {
     this._repository = url;
     return this;
@@ -59,12 +71,10 @@ export abstract class SentenzaProvider {
     }
     const isBranchPipeline = Object.prototype.hasOwnProperty.call(this._trigger, 'branch');
     logger('trigger', { isBranchPipeline });
-
     if (!this._target && isBranchPipeline) {
       logger('trigger', 'trigger("branch") called without target specified, running on same branch');
       this._target = this._trigger as { branch: string };
     }
-
     if (!this._target) {
       logger('trigger', 'no target specified');
       throw new Error('No target defined to run pipeline. Please specify a target branch, commit hash or target tag.');

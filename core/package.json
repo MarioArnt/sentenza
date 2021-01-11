@@ -1,6 +1,6 @@
 {
   "name": "sentenza",
-  "version": "1.0.0-rc2",
+  "version": "1.0.0-rc3",
   "description": "Sentenza helps you trigger CI builds",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",

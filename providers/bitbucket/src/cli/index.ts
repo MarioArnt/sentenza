@@ -72,7 +72,7 @@ const triggerPipeline = (
     Object.keys(process.env)
       .filter((key) => key.startsWith('SENTENZA_'))
       .forEach((key) => {
-        variables[key] = process.env[key];
+        variables[key.substr(9)] = process.env[key];
       });
     pipeline = sentenza.trigger({ custom: trigger.substr(7), variables });
   } else {
